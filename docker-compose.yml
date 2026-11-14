@@ -1,0 +1,101 @@
+version: "3.8"
+
+services:
+  web-app:
+    image: web_server
+    container_name: web-app
+    ports:
+      - "80:80"
+    environment:
+      - DEV_PASSWORD=${DEV_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-${DEV_PASSWORD}}
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-${DEV_PASSWORD}}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-${DEV_PASSWORD}}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-${DEV_PASSWORD}}
+    volumes:
+      - ./www:/var/www/html
+    networks:
+      - dev_network
+
+  # SQL Server (Tài khoản tối cao mặc định: sa)
+  sqlserver_db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_db
+    restart: "no"
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-${DEV_PASSWORD}}
+    volumes:
+      - ./data/sqlserver:/var/lib/mssql
+    networks:
+      - dev_network
+
+  # MySQL (Tài khoản tối cao mặc định: root)
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: "no"
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-${DEV_PASSWORD}}
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    networks:
+      - dev_network
+
+  # PostgreSQL (Tài khoản tối cao mặc định: postgres)
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: "no"
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-${DEV_PASSWORD}}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - dev_network
+
+  # MongoDB (Tài khoản tối cao tự đặt: root)
+  mongodb:
+    image: mongo:6.0
+    container_name: mongo_db
+    restart: "no"
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD:-${DEV_PASSWORD}}
+    volumes:
+      - ./data/mongo:/data/db
+    networks:
+      - dev_network
+
+  # Redis (Caching)
+  redis:
+    image: redis:alpine
+    container_name: redis_cache
+    restart: "no"
+    ports:
+      - "6379:6379"
+    networks:
+      - dev_network
+
+  # Adminer (Quản lý Database trực quan)
+  adminer:
+    image: adminer
+    container_name: adminer
+    restart: "no"
+    ports:
+      - "8080:8080"
+    networks:
+      - dev_network
+
+networks:
+  dev_network:
+    driver: bridge
